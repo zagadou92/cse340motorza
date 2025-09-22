@@ -116,8 +116,9 @@ app.use(async (err, req, res, next) => {
  * Start Server
  ******************************************/
 const PORT = process.env.PORT || 5500;
-const HOST = process.env.HOST || "localhost";
+const isDev = process.env.NODE_ENV === "development";
+const HOST = isDev ? "localhost" : "0.0.0.0"; // 🔹 localhost en dev, 0.0.0.0 en prod
 
 app.listen(PORT, HOST, () => {
-  console.log(`✅ App listening on http://${HOST}:${PORT}`);
+  console.log(`✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV})`);
 });
