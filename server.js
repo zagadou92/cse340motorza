@@ -1,4 +1,4 @@
-adapte ce code require("dotenv").config(); // Charger les variables d'environnement
+ require("dotenv").config(); // Charger les variables d'environnement
 
 /* ******************************************
  * Require Statements
