@@ -1,4 +1,4 @@
-require("dotenv").config(); // Charger les variables d'environnement
+adapte ce code require("dotenv").config(); // Charger les variables d'environnement
 
 /* ******************************************
  * Require Statements
@@ -47,17 +47,15 @@ app.use(
     resave: true,
     saveUninitialized: true,
     name: "sessionId",
-    cookie: { maxAge: 1000 * 60 * 60 * 24 }, // 1 jour
   })
 );
 
 // JWT check
 app.use(utilities.checkJWTToken);
 
-// Expose cookies and session to views
+// Expose cookies to views
 app.use((req, res, next) => {
   res.locals.cookies = req.cookies;
-  res.locals.session = req.session; // 🔹 utile pour vérifier account_type dans les vues
   next();
 });
 
@@ -77,17 +75,7 @@ app.use(staticRoutes);
 app.get("/", utilities.handleErrors(baseController.buildHome));
 
 // Inventory routes
-// 🔹 Ajout d’un middleware pour vérifier account_type avant d’accéder à /inv
-app.use("/inv", (req, res, next) => {
-  if (!req.session || !req.session.account_type) {
-    return res.status(401).render("errors/error", {
-      title: "Unauthorized",
-      message: "Vous devez être connecté pour accéder à cette page.",
-      nav: [],
-    });
-  }
-  next();
-}, inventoryRoute);
+app.use("/inv", inventoryRoute);
 
 // Account routes
 app.use("/account", accountRoute);
