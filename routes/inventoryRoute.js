@@ -15,10 +15,12 @@ const utilities = require("../utilities/");
 // ---------------------------
 const safeCheckAccountType = async (req, res, next) => {
   try {
+    console.log("Session data:", req.session); // pour débogage
     if (!req.session || !req.session.account_type) {
       req.flash("notice", "Access denied. Please log in.");
-      return res.redirect("/inv/");
+      return res.redirect("/account/login");
     }
+    // Appelle la fonction existante pour vérifier le type
     return utilities.checkAccountType(req, res, next);
   } catch (error) {
     console.error("Erreur dans safeCheckAccountType:", error);
