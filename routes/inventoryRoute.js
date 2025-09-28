@@ -1,96 +1,125 @@
-const invValidate = require("../utilities/inventory-validation");
+/**
+ * inventory-routes.js
+ * Routes sécurisées pour l'inventaire des véhicules
+ */
 
-// Needed Resources
 const express = require("express");
+const router = new express.Router();
+
+const invController = require("../controllers/invController");
+const invValidate = require("../utilities/inventory-validation");
 const utilities = require("../utilities/");
 
-const router = new express.Router();
-const invController = require("../controllers/invController");
+// ---------------------------
+// Middleware sécurisé pour vérifier account_type
+// ---------------------------
+const safeCheckAccountType = async (req, res, next) => {
+  try {
+    // Vérifie que la session existe et que account_type est défini
+    if (!req.session || !req.session.account_type) {
+      req.flash("notice", "Access denied. Please log in.");
+      return res.redirect("/account/login");
+    }
+    return utilities.checkAccountType(req, res, next);
+  } catch (error) {
+    console.error("Erreur dans safeCheckAccountType:", error);
+    return res.status(500).send("Server error in account check.");
+  }
+};
 
-// Route to build inventory by classification view
+// ---------------------------
+// ROUTES GET
+// ---------------------------
+
+// Vue gestion de l’inventaire
+router.get(
+  "/",
+  safeCheckAccountType,
+  utilities.handleErrors(invController.buildVehicleManagement)
+);
+
+// Vue par classification
 router.get(
   "/type/:classificationId",
   utilities.handleErrors(invController.buildByClassificationId)
 );
-// Route to build single item view
+
+// Vue d’un véhicule
 router.get(
   "/detail/:invId",
   utilities.handleErrors(invController.buildItemByInvId)
 );
 
-// Route to build vehicle management view
-router.get(
-  "/",
-  utilities.checkAccountType,
-  utilities.handleErrors(invController.buildVehicleManagement)
-);
-
-// Route sent when the "Add New Classification" link is clicked
+// Ajouter une classification
 router.get(
   "/add-classification",
-  utilities.checkAccountType,
+  safeCheckAccountType,
   utilities.handleErrors(invController.buildAddClassification)
 );
 
-// Route sent when the "Add New Vehicle" link is clicked
+// Ajouter un véhicule
 router.get(
   "/add-inventory",
-  utilities.checkAccountType,
+  safeCheckAccountType,
   utilities.handleErrors(invController.buildAddInventory)
 );
 
-// Route to get the inventory data as JSON for AJAX Route
-router.get(
-  "/getInventory/:classification_id",
-  utilities.checkAccountType,
-  utilities.handleErrors(invController.getInventoryJSON)
-);
-
-// Route sent when the "Edit New Vehicle" link is clicked
+// Editer un véhicule
 router.get(
   "/edit/:inv_id",
-  utilities.checkAccountType,
+  safeCheckAccountType,
   utilities.handleErrors(invController.buildEditInventory)
 );
 
-// Route to post "Add Classification Name" to database
+// Supprimer un véhicule (confirmation)
+router.get(
+  "/delete/:inv_id",
+  safeCheckAccountType,
+  utilities.handleErrors(invController.deleteView)
+);
+
+// Récupérer les données d’inventaire en JSON (AJAX)
+router.get(
+  "/getInventory/:classification_id",
+  safeCheckAccountType,
+  utilities.handleErrors(invController.getInventoryJSON)
+);
+
+// ---------------------------
+// ROUTES POST
+// ---------------------------
+
+// Ajouter une classification
 router.post(
   "/add-classification",
-  utilities.checkAccountType,
+  safeCheckAccountType,
   invValidate.addClassificationRules(),
   invValidate.checkClassificationData,
   utilities.handleErrors(invController.addClassificationName)
 );
 
-// Route to post "Add New Vehicle" to database
+// Ajouter un nouveau véhicule
 router.post(
   "/add-inventory",
-  utilities.checkAccountType,
+  safeCheckAccountType,
   invValidate.addInventoryRules(),
   invValidate.checkInventoryData,
   utilities.handleErrors(invController.addNewVehicle)
 );
 
-// Route to post "Update Vehicle" to database
+// Mettre à jour un véhicule
 router.post(
   "/update/",
-  utilities.checkAccountType,
+  safeCheckAccountType,
   invValidate.addInventoryRules(),
   invValidate.checkUpdateData,
   utilities.handleErrors(invController.updateInventory)
 );
 
-// Deliver the delete confirmation view
-router.get(
-  "/delete/:inv_id",
-  utilities.checkAccountType,
-  utilities.handleErrors(invController.deleteView)
-);
-
-// Process the delete inventory request
+// Supprimer un véhicule
 router.post(
   "/delete",
-  utilities.checkAccountType,
+  safeCheckAccountType,
   utilities.handleErrors(invController.deleteItem)
 );
 
