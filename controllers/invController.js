@@ -2,7 +2,7 @@ const invModel = require("../models/inventory-model");
 const utilities = require("../utilities/");
 const { validationResult } = require("express-validator");
 
-const invCont = {};
+const invController = {};
 
 /* ***************************
  *  Build inventory by classification view
@@ -231,4 +231,4 @@ invCont.addNewVehicle = async function (req, res) {
   }
 };
 
-module.exports = invCont;
+module.exports = invController;
