@@ -16,9 +16,6 @@ const utilities = require("./utilities");
 const staticRoutes = require("./routes/static");
 const baseController = require("./controllers/baseController");
 const inventoryRoute = require("./routes/inventoryRoute");
-const accountRoute = require("./routes/accountRoute");
-const usersRoute = require("./routes/usersRoute");
-const accountController = require("./controllers/accountController");
 
 const app = express();
 
@@ -50,14 +47,9 @@ app.use(
   })
 );
 
-// JWT check
-app.use(utilities.checkJWTToken);
-
 // Expose cookies to views
 app.use((req, res, next) => {
   res.locals.cookies = req.cookies;
-  // Expose user session to views, null si non connecté
-  res.locals.accountData = req.session?.user || null;
   next();
 });
 
@@ -78,15 +70,6 @@ app.get("/", utilities.handleErrors(baseController.buildHome));
 
 // Inventory routes - accessibles pour tous
 app.use("/inv", inventoryRoute);
-
-// Account routes - protégé si besoin
-app.use("/account", accountRoute);
-
-// Users routes - protégé si besoin
-app.use("/users", usersRoute);
-
-// Logout route
-app.post("/logout", utilities.handleErrors(accountController.logout));
 
 /* ******************************************
  * 404 Handler - must be last route
@@ -119,7 +102,7 @@ app.use(async (err, req, res, next) => {
  ******************************************/
 const PORT = process.env.PORT || 5500;
 const isDev = process.env.NODE_ENV === "development";
-const HOST = isDev ? "localhost" : "0.0.0.0"; // 🔹 localhost en dev, 0.0.0.0 en prod
+const HOST = isDev ? "localhost" : "0.0.0.0";
 
 app.listen(PORT, HOST, () => {
   console.log(`✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV})`);
