@@ -1,12 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Selecciona todos los formularios con la clase específica
+  // Sélectionne tous les formulaires avec la classe spécifique
   const forms = document.querySelectorAll(".updateForm");
 
-  // Itera sobre cada formulario
+  // Itère sur chaque formulaire
   forms.forEach((form) => {
     form.addEventListener("change", function () {
-      // Selecciona el botón dentro del formulario que cambió
-      const updateBtn = form.querySelector(".btn-account");
+      // Sélectionne le bouton à l'intérieur du formulaire
+      const updateBtn = form.querySelector("button");
       if (updateBtn) {
         updateBtn.removeAttribute("disabled");
       }
