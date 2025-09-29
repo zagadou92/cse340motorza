@@ -34,7 +34,7 @@ const safeCheckAccountType = async (req, res, next) => {
 
 // Route principale /inv/ → Vehicle Management
 router.get(
-  "/",
+  "/inv/",
   safeCheckAccountType,
   utilities.handleErrors(invController.buildVehicleManagement)
 );
