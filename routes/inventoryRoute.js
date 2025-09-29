@@ -33,6 +33,9 @@ const safeCheckAccountType = async (req, res, next) => {
 // ---------------------------
 
 // Route principale /inv/ → Vehicle Management
+//Route to build management views
+router.get("/inv/", utilities.handleErrors(invController.buildManagementView));
+
 router.get(
   "/",
   safeCheckAccountType,
