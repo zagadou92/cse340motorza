@@ -1,4 +1,4 @@
-  require("dotenv").config(); // Charger les variables d'environnement
+ require("dotenv").config(); // Charger les variables d'environnement
 
 /* ******************************************
  * Require Statements
@@ -74,7 +74,7 @@ app.use(staticRoutes);
 // Home page
 app.get("/", utilities.handleErrors(baseController.buildHome));
 
-// Inventory routes
+// Inventory routes  
 app.use("/inv", inventoryRoute);
 
 // Account routes
