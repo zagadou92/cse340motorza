@@ -1,4 +1,4 @@
-require("dotenv").config(); // Charger les variables d'environnement
+  require("dotenv").config(); // Charger les variables d'environnement
 
 /* ******************************************
  * Require Statements
@@ -36,9 +36,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// -----------------------------
-// Session middleware (sauvegarde en Postgres)
-// -----------------------------
+// Session middleware
 app.use(
   session({
     store: new pgSession({
@@ -46,24 +44,18 @@ app.use(
       createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET || "defaultSecret",
-    resave: false, // ✅ mieux que true pour éviter d’écraser la session à chaque req
-    saveUninitialized: false, // ✅ n’enregistre pas une session vide
+    resave: true,
+    saveUninitialized: true,
     name: "sessionId",
-    cookie: {
-      secure: process.env.NODE_ENV === "production", // true en prod (HTTPS)
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60, // 1h
-    },
   })
 );
 
-// Vérifie si un JWT est présent (utile si tu ajoutes une API)
+// JWT check
 app.use(utilities.checkJWTToken);
 
-// Expose cookies et session aux vues
+// Expose cookies to views
 app.use((req, res, next) => {
   res.locals.cookies = req.cookies;
-  res.locals.session = req.session; // 🔹 permet d’utiliser session dans EJS
   next();
 });
 
@@ -82,28 +74,17 @@ app.use(staticRoutes);
 // Home page
 app.get("/", utilities.handleErrors(baseController.buildHome));
 
-// Inventory routes (protégées avec safeCheckAccountType dans tes routes)
+// Inventory routes
 app.use("/inv", inventoryRoute);
 
-// Account routes (login, register, etc.)
+// Account routes
 app.use("/account", accountRoute);
 
 // Users routes
 app.use("/users", usersRoute);
 
-// Logout route (vide la session et redirige)
-app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Erreur logout:", err);
-      req.flash("notice", "Error logging out.");
-      return res.redirect("/");
-    }
-    res.clearCookie("sessionId"); // supprime le cookie de session
-    req.flash("notice", "You have been logged out successfully.");
-    res.redirect("/account/login");
-  });
-});
+// Logout route
+app.post("/logout", utilities.handleErrors(accountController.logout));
 
 /* ******************************************
  * 404 Handler - must be last route
@@ -139,7 +120,5 @@ const isDev = process.env.NODE_ENV === "development";
 const HOST = isDev ? "localhost" : "0.0.0.0"; // 🔹 localhost en dev, 0.0.0.0 en prod
 
 app.listen(PORT, HOST, () => {
-  console.log(
-    `✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV})`
-  );
+  console.log(`✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV})`);
 });
