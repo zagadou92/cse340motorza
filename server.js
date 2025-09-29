@@ -1,4 +1,4 @@
- require("dotenv").config(); // Charger les variables d'environnement
+require("dotenv").config(); // Charger les variables d'environnement
 
 /* ******************************************
  * Require Statements
@@ -56,6 +56,8 @@ app.use(utilities.checkJWTToken);
 // Expose cookies to views
 app.use((req, res, next) => {
   res.locals.cookies = req.cookies;
+  // Expose user session to views, null si non connecté
+  res.locals.accountData = req.session?.user || null;
   next();
 });
 
@@ -74,13 +76,13 @@ app.use(staticRoutes);
 // Home page
 app.get("/", utilities.handleErrors(baseController.buildHome));
 
-// Inventory routes  
+// Inventory routes - accessibles pour tous
 app.use("/inv", inventoryRoute);
 
-// Account routes
+// Account routes - protégé si besoin
 app.use("/account", accountRoute);
 
-// Users routes
+// Users routes - protégé si besoin
 app.use("/users", usersRoute);
 
 // Logout route
