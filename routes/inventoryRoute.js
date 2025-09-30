@@ -1,45 +1,54 @@
 const express = require("express");
-const router = express.Router();
+const router = new express.Router();
 
-const invController = require("../controllers/invController");
-const invValidate = require("../utilities/inventory-validation");
+// Utilities & Validation
 const utilities = require("../utilities/");
+const invValidate = require("../utilities/inventory-validation");
 
-// Routes GET
+// Controllers
+const invController = require("../controllers/invController");
+
+// ===== PUBLIC ROUTES =====
 router.get("/type/:classificationId", utilities.handleErrors(invController.buildByClassificationId));
 router.get("/detail/:invId", utilities.handleErrors(invController.buildItemByInvId));
-router.get("/", utilities.checkAccountType, utilities.handleErrors(invController.buildVehicleManagement));
-router.get("/add-classification", utilities.checkAccountType, utilities.handleErrors(invController.buildAddClassification));
-router.get("/add-inventory", utilities.checkAccountType, utilities.handleErrors(invController.buildAddInventory));
-router.get("/getInventory/:classification_id", utilities.checkAccountType, utilities.handleErrors(invController.getInventoryJSON));
-router.get("/edit/:inv_id", utilities.checkAccountType, utilities.handleErrors(invController.buildEditInventory));
-router.get("/delete/:inv_id", utilities.checkAccountType, utilities.handleErrors(invController.deleteView));
 
-// Routes POST
+// ===== PROTECTED ROUTES =====
+router.get("/", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.buildVehicleManagement));
+router.get("/add-classification", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.buildAddClassification));
+router.get("/add-inventory", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.buildAddInventory));
+router.get("/edit/:inv_id", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.buildEditInventory));
+router.get("/delete/:inv_id", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.deleteView));
+router.get("/getInventory/:classification_id", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.getInventoryJSON));
+
+// ===== POST ROUTES =====
 router.post("/add-classification",
-    utilities.checkAccountType,
-    invValidate.addClassificationRules(),
-    invValidate.checkClassificationData,
-    utilities.handleErrors(invController.addClassificationName)
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  invValidate.addClassificationRules(),
+  invValidate.checkClassificationData,
+  utilities.handleErrors(invController.addClassificationName)
 );
 
 router.post("/add-inventory",
-    utilities.checkAccountType,
-    invValidate.addInventoryRules(),
-    invValidate.checkInventoryData,
-    utilities.handleErrors(invController.addNewVehicle)
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  invValidate.addInventoryRules(),
+  invValidate.checkInventoryData,
+  utilities.handleErrors(invController.addNewVehicle)
 );
 
 router.post("/update/",
-    utilities.checkAccountType,
-    invValidate.addInventoryRules(),
-    invValidate.checkUpdateData,
-    utilities.handleErrors(invController.updateInventory)
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  invValidate.addInventoryRules(),
+  invValidate.checkUpdateData,
+  utilities.handleErrors(invController.updateInventory)
 );
 
 router.post("/delete",
-    utilities.checkAccountType,
-    utilities.handleErrors(invController.deleteItem)
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  utilities.handleErrors(invController.deleteItem)
 );
 
 module.exports = router;
