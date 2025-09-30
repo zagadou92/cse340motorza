@@ -1,0 +1,87 @@
+<% if (title) { %>
+<h1><%= title %></h1>
+<% } else { res.redirect('/') } %> <%- messages() %>
+<% if (errors) { %>
+<br />
+<ul class="notice">
+  <% errors.array().forEach(error => { %>
+  <li><%= error.msg %></li>
+  <% }) %>
+</ul>
+<br />
+<% } %>
+<div class="form-container">
+  <h2>Acount Info Update</h2><br>
+  <p class="form-advice">📝 All fields are required ✍️</p>
+  <form class="updateForm" action="/users/update/info" method="post">
+    <div class="form-group">
+      <label for="firstName">First Name:</label>
+      <input
+        type="text"
+        id="firstName"
+        name="account_firstname"
+        placeholder="Enter a valid first name"
+        required
+        value="<%= locals.account_firstname %>"
+      >
+    </div>
+    <div class="form-group">
+      <label for="lastName">Last Name:</label>
+      <input
+        type="text"
+        id="lastName"
+        name="account_lastname"
+        placeholder="Enter a valid last name"
+        required
+        value="<%= locals.account_lastname %>"
+      >
+    </div>
+    <div class="form-group">
+      <label for="email">Email Address:</label>
+      <input
+        type="email"
+        id="email"
+        name="account_email"
+        placeholder="Enter a valid email address"
+        required
+        value="<%= locals.account_email %>"
+      >
+    </div>
+    <button type="submit" class="btn-account" disabled>Update Account</button>
+    <input type="hidden" name="account_id"
+    <% if(locals.account_id) { %> value="<%= locals.account_id%>"
+    <% } %>>
+  </form>
+</div>
+
+<div class="form-container">
+  <h2>Update Password</h2><br>
+  <form class="updateForm" action="/users/update/password" method="post">
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input
+        type="password"
+        id="password"
+        name="account_password"
+        required
+        placeholder="Enter a valid password"
+        pattern="^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{12,}$"
+      >
+    </div>
+    <div class="form-advice">
+      <span
+        >Passwords must be at least 12 characters and contain at least 1 number,
+        1 capital letter and 1 special character</span
+      >
+    </div>
+    <button id="pwd-visibility" type="button">
+      Toggle Password Visibility
+    </button>
+    <button type="submit" class="btn-account" disabled>Change Password</button>
+    <input type="hidden" name="account_id"
+    <% if(locals.account_id) { %> value="<%= locals.account_id %>"
+    <% } %>>
+  </form>
+</div>
+
+<script src="../../js/inv-update.js"></script>

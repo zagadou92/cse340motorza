@@ -1,0 +1,125 @@
+<% if (title) { %>
+<h1><%= title %></h1>
+<% } else { res.redirect('/') } %> <%- messages() %>
+<br >
+<% if (errors) { %>
+<ul class="notice">
+  <% errors.array().forEach(error => { %>
+  <li><%= error.msg %></li>
+  <% }) %>
+</ul>
+<br >
+<% } %>
+<div class="form-container">
+  <p class="form-advice">📝 All fields are required ✍️</p>
+  <form id="addVehicle" action="/inv/add-inventory" method="post">
+    <div class="form-group">
+      <label for="classificationList">Classification:</label>
+      <%- classificationList %>
+    </div>
+    <div class="form-group">
+      <label for="make">Make:</label>
+      <input
+        type="text"
+        id="make"
+        name="inv_make"
+        placeholder="Min 3 characters"
+        required
+        minlength="3"
+        value="<%= locals.inv_make %>"
+      >
+    </div>
+    <div class="form-group">
+      <label for="model">Model:</label>
+      <input
+        type="text"
+        id="model"
+        name="inv_model"
+        placeholder="Min 3 characters"
+        required
+        minlength="3"
+        value="<%= locals.inv_model %>"
+      >
+    </div>
+    <div class="form-group">
+      <label for="description">Description:</label>
+      <textarea
+        id="description"
+        name="inv_description"
+        rows="5"
+        placeholder="Write here..."
+        required
+      ><%= locals.inv_description %></textarea>
+    </div>
+    <div class="form-group">
+      <label for="imagePath">Image Path:</label>
+      <input
+        type="text"
+        id="imagePath"
+        name="inv_image"
+        required
+        placeholder="Enter a valid path"
+        value="/images/vehicles/no-image.png"
+      >
+    </div>
+    <div class="form-group">
+      <label for="thumbnailPath">Thumbnail Path:</label>
+      <input
+        type="text"
+        id="thumbnailPath"
+        name="inv_thumbnail"
+        required
+        placeholder="Enter a valid path"
+        value="/images/vehicles/no-image-tn.png"
+      >
+    </div>
+    <div class="form-group">
+      <label for="price">Price:</label>
+      <input
+        type="text"
+        id="price"
+        name="inv_price"
+        required
+        placeholder="decimal or integer"
+        pattern="^\d+(\.\d{1,2})?$"
+        value="<%= locals.inv_price %>"
+      >
+    </div>
+    <div class="form-group">
+      <label for="year">Year:</label>
+      <input
+        type="text"
+        id="year"
+        name="inv_year"
+        required
+        placeholder="4-digit year"
+        pattern="^\d{4}$" 
+        value="<%= locals.inv_year %>"
+      >
+    </div>
+    <div class="form-group">
+      <label for="miles">Miles:</label>
+      <input
+        type="text"
+        id="miles"
+        name="inv_miles"
+        required
+        placeholder="digits only"
+        pattern="^\d+$"
+        value="<%= locals.inv_year %>"
+      >
+    </div>
+    <div class="form-group">
+      <label for="color">Color:</label>
+      <input
+        type="text"
+        id="color"
+        name="inv_color"
+        required
+        placeholder="Enter a color"
+        value="<%= locals.inv_color %>"
+      >
+    </div>
+    <button type="submit" class="btn-account">Add Vehicle</button>
+  </form>
+</div>
