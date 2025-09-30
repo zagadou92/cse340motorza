@@ -9,16 +9,49 @@ const invValidate = require("../utilities/inventory-validation");
 const invController = require("../controllers/invController");
 
 // ===== PUBLIC ROUTES =====
+// View inventory by classification (public)
 router.get("/type/:classificationId", utilities.handleErrors(invController.buildByClassificationId));
+// View single item (public)
 router.get("/detail/:invId", utilities.handleErrors(invController.buildItemByInvId));
+// Public inventory listing
+router.get("/", utilities.handleErrors(invController.buildVehicleManagement));
 
-// ===== PROTECTED ROUTES =====
-router.get("/", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.buildVehicleManagement));
-router.get("/add-classification", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.buildAddClassification));
-router.get("/add-inventory", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.buildAddInventory));
-router.get("/edit/:inv_id", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.buildEditInventory));
-router.get("/delete/:inv_id", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.deleteView));
-router.get("/getInventory/:classification_id", utilities.checkJWTToken, utilities.checkAccountType, utilities.handleErrors(invController.getInventoryJSON));
+// ===== ADMIN / PROTECTED ROUTES =====
+router.get("/admin",
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  utilities.handleErrors(invController.buildVehicleManagement)
+);
+
+router.get("/add-classification",
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  utilities.handleErrors(invController.buildAddClassification)
+);
+
+router.get("/add-inventory",
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  utilities.handleErrors(invController.buildAddInventory)
+);
+
+router.get("/edit/:inv_id",
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  utilities.handleErrors(invController.buildEditInventory)
+);
+
+router.get("/delete/:inv_id",
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  utilities.handleErrors(invController.deleteView)
+);
+
+router.get("/getInventory/:classification_id",
+  utilities.checkJWTToken,
+  utilities.checkAccountType,
+  utilities.handleErrors(invController.getInventoryJSON)
+);
 
 // ===== POST ROUTES =====
 router.post("/add-classification",
