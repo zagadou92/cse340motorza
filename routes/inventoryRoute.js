@@ -25,19 +25,19 @@ router.get("/admin",
 
 router.get("/add-classification",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   utilities.handleErrors(invController.buildAddClassification)
 );
 
 router.get("/add-inventory",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   utilities.handleErrors(invController.buildAddInventory)
 );
 
 router.get("/edit/:inv_id",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   utilities.handleErrors(invController.buildEditInventory)
 );
 
@@ -49,7 +49,7 @@ router.get("/delete/:inv_id",
 
 router.get("/getInventory/:classification_id",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   utilities.handleErrors(invController.getInventoryJSON)
 );
 
