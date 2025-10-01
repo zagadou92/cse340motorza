@@ -43,7 +43,7 @@ router.get("/edit/:inv_id",
 
 router.get("/delete/:inv_id",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   utilities.handleErrors(invController.deleteView)
 );
 
@@ -56,7 +56,7 @@ router.get("/getInventory/:classification_id",
 // ===== POST ROUTES =====
 router.post("/add-classification",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   invValidate.addClassificationRules(),
   invValidate.checkClassificationData,
   utilities.handleErrors(invController.addClassificationName)
@@ -64,7 +64,7 @@ router.post("/add-classification",
 
 router.post("/add-inventory",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   invValidate.addInventoryRules(),
   invValidate.checkInventoryData,
   utilities.handleErrors(invController.addNewVehicle)
@@ -72,7 +72,7 @@ router.post("/add-inventory",
 
 router.post("/update/",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   invValidate.addInventoryRules(),
   invValidate.checkUpdateData,
   utilities.handleErrors(invController.updateInventory)
@@ -80,7 +80,7 @@ router.post("/update/",
 
 router.post("/delete",
   utilities.checkJWTToken,
-  utilities.checkAccountType,
+  
   utilities.handleErrors(invController.deleteItem)
 );
 
