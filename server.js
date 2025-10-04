@@ -26,14 +26,13 @@ const app = express();
  * View Engine and Layouts
  ******************************************/
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views")); // chemin absolu
+app.set("views", path.join(__dirname, "views"));
 app.use(expressLayouts);
 app.set("layout", "./layouts/layout");
 
 /* ******************************************
  * Middleware
  ******************************************/
-// Body parser moderne
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,19 +47,19 @@ app.use(
       createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET || "defaultSecret",
-    resave: false,             // éviter des réécritures inutiles
-    saveUninitialized: false,  // sécurité
+    resave: false,
+    saveUninitialized: false,
     name: "sessionId",
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // HTTPS en prod
+      secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 60, // 1 heure
       sameSite: "lax",
     },
   })
 );
 
-// JWT check middleware
+// JWT middleware (universel)
 app.use(utilities.checkJWTToken);
 
 // Expose cookies & login info to views
@@ -85,24 +84,14 @@ app.use(express.static(path.join(__dirname, "public")));
  * Routes
  ******************************************/
 app.use(staticRoutes);
-
-// Home page
 app.get("/", utilities.handleErrors(baseController.buildHome));
-
-// Inventory routes
 app.use("/inv", inventoryRoute);
-
-// Account routes
 app.use("/account", accountRoute);
-
-// Users routes
 app.use("/users", usersRoute);
-
-// Logout route
 app.post("/logout", utilities.handleErrors(accountController.logout));
 
 /* ******************************************
- * 404 Handler - must be last route
+ * 404 Handler
  ******************************************/
 app.use((req, res, next) => {
   next({ status: 404, message: "Sorry, we appear to have lost that page 🥹." });
@@ -135,9 +124,13 @@ app.use(async (err, req, res, next) => {
 /* ******************************************
  * Start Server
  ******************************************/
-const PORT = process.env.PORT || 5500;
-const HOST = "0.0.0.0"; // toujours 0.0.0.0 pour Render
+const PORT = process.env.PORT || 10000; // Port fourni par Render
+const HOST = "0.0.0.0"; // Écoute toutes les interfaces réseau
 
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV || "development"})`);
 });
+
+// Timeout pour éviter les "Connection reset by peer"
+server.keepAliveTimeout = 120000;  // 120 sec
+server.headersTimeout = 120000;    // 120 sec
