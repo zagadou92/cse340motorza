@@ -10,6 +10,8 @@ const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const flash = require("connect-flash");
 const pgSession = require("connect-pg-simple")(session);
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
 const pool = require("./database/");
 const utilities = require("./utilities");
@@ -30,13 +32,39 @@ app.use(expressLayouts);
 app.set("layout", "./layouts/layout");
 
 /* ******************************************
- * Middleware
+ * Security Middlewares
+ ******************************************/
+
+// 1️⃣ Helmet - protège contre XSS, sniffing, etc.
+app.use(helmet());
+
+// 2️⃣ Forcer HTTPS en production
+app.use((req, res, next) => {
+  if (
+    process.env.NODE_ENV === "production" &&
+    req.headers["x-forwarded-proto"] !== "https"
+  ) {
+    return res.redirect("https://" + req.headers.host + req.url);
+  }
+  next();
+});
+
+// 3️⃣ Rate limiting - limite les requêtes (anti-brute-force)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requêtes max/IP
+  message: "Trop de requêtes, réessayez plus tard.",
+});
+app.use(limiter);
+
+/* ******************************************
+ * Middleware standard
  ******************************************/
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Session middleware
+// Session middleware sécurisé
 app.use(
   session({
     store: new pgSession({
@@ -44,16 +72,22 @@ app.use(
       createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET || "defaultSecret",
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     name: "sessionId",
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // HTTPS obligatoire en prod
+      httpOnly: true, // empêche l'accès JS
+      sameSite: "strict", // empêche le vol de session
+      maxAge: 1000 * 60 * 60, // 1h
+    },
   })
 );
 
-// JWT check
+// Vérification du token JWT (si utilisé)
 app.use(utilities.checkJWTToken);
 
-// Expose cookies to views
+// Expose cookies à EJS
 app.use((req, res, next) => {
   res.locals.cookies = req.cookies;
   next();
@@ -67,27 +101,36 @@ app.use((req, res, next) => {
 });
 
 /* ******************************************
+ * Middleware de protection d’accès
+ ******************************************/
+function requireLogin(req, res, next) {
+  if (!req.session || !req.session.userId) {
+    req.flash("error", "Vous devez être connecté pour accéder à cette page.");
+    return res.redirect("/account/login");
+  }
+  next();
+}
+
+/* ******************************************
  * Routes
  ******************************************/
 app.use(staticRoutes);
 
-// Home page
+// Page d’accueil
 app.get("/", utilities.handleErrors(baseController.buildHome));
 
-// Inventory routes
-app.use("/inv", inventoryRoute);
+// Route protégée /inv (inventaire)
+app.use("/inv", requireLogin, inventoryRoute);
 
-// Account routes
+// Comptes / utilisateurs
 app.use("/account", accountRoute);
-
-// Users routes
 app.use("/users", usersRoute);
 
-// Logout route
+// Déconnexion
 app.post("/logout", utilities.handleErrors(accountController.logout));
 
 /* ******************************************
- * 404 Handler - must be last route
+ * 404 Handler
  ******************************************/
 app.use((req, res, next) => {
   next({ status: 404, message: "Sorry, we appear to have lost that page 🥹." });
@@ -117,8 +160,10 @@ app.use(async (err, req, res, next) => {
  ******************************************/
 const PORT = process.env.PORT || 5500;
 const isDev = process.env.NODE_ENV === "development";
-const HOST = isDev ? "localhost" : "0.0.0.0"; // 🔹 localhost en dev, 0.0.0.0 en prod
+const HOST = isDev ? "localhost" : "0.0.0.0"; // localhost en dev, 0.0.0.0 en prod
 
 app.listen(PORT, HOST, () => {
-  console.log(`✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV})`);
+  console.log(
+    `✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV})`
+  );
 });
