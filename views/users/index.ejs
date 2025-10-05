@@ -1,0 +1,10 @@
+<% if (title) { %>
+<h1><%= title %></h1>
+<% } else { res.redirect('/') } %> <%- messages() %>
+
+<div class="manager-container">
+  <table id="usersDisplay"></table>
+  <noscript>JavaScript must be enabled to use this page.</noscript>
+</div>
+
+<script src="../../js/users.js"></script>
