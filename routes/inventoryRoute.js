@@ -1,96 +1,110 @@
-const invValidate = require("../utilities/inventory-validation");
+// inventoryRoute.js
 
-// Needed Resources
 const express = require("express");
+const invValidate = require("../utilities/inventory-validation");
 const utilities = require("../utilities/");
-
-const router = new express.Router();
 const invController = require("../controllers/invController");
+const requireEmployeeOrAdmin = require("../middleware/authMiddleware"); // 🔹 notre middleware JWT + type compte
 
-// Route to build inventory by classification view
+const router = express.Router();
+
+/* ==============================
+   Routes publiques
+   ============================== */
+
+// Affiche tous les véhicules d’une classification (accessible aux visiteurs)
 router.get(
   "/type/:classificationId",
   utilities.handleErrors(invController.buildByClassificationId)
 );
-// Route to build single item view
+
+// Affiche le détail d’un véhicule (accessible aux visiteurs)
 router.get(
   "/detail/:invId",
   utilities.handleErrors(invController.buildItemByInvId)
 );
 
-// Route to build vehicle management view
+/* ==============================
+   Routes protégées (Employé ou Admin)
+   ============================== */
+
+// Vue gestion des véhicules
 router.get(
   "/",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   utilities.handleErrors(invController.buildVehicleManagement)
 );
 
-// Route sent when the "Add New Classification" link is clicked
+// Ajouter une nouvelle classification
 router.get(
   "/add-classification",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   utilities.handleErrors(invController.buildAddClassification)
 );
 
-// Route sent when the "Add New Vehicle" link is clicked
+// Ajouter un nouveau véhicule
 router.get(
   "/add-inventory",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   utilities.handleErrors(invController.buildAddInventory)
 );
 
-// Route to get the inventory data as JSON for AJAX Route
+// Récupération JSON de l’inventaire pour AJAX
 router.get(
   "/getInventory/:classification_id",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   utilities.handleErrors(invController.getInventoryJSON)
 );
 
-// Route sent when the "Edit New Vehicle" link is clicked
+// Modifier un véhicule
 router.get(
   "/edit/:inv_id",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   utilities.handleErrors(invController.buildEditInventory)
 );
 
-// Route to post "Add Classification Name" to database
+/* ==============================
+   Routes POST protégées
+   ============================== */
+
+// Ajouter une classification
 router.post(
   "/add-classification",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   invValidate.addClassificationRules(),
   invValidate.checkClassificationData,
   utilities.handleErrors(invController.addClassificationName)
 );
 
-// Route to post "Add New Vehicle" to database
+// Ajouter un véhicule
 router.post(
   "/add-inventory",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   invValidate.addInventoryRules(),
   invValidate.checkInventoryData,
   utilities.handleErrors(invController.addNewVehicle)
 );
 
-// Route to post "Update Vehicle" to database
+// Mettre à jour un véhicule
 router.post(
   "/update/",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   invValidate.addInventoryRules(),
   invValidate.checkUpdateData,
   utilities.handleErrors(invController.updateInventory)
 );
 
-// Deliver the delete confirmation view
+// Affichage confirmation suppression
 router.get(
   "/delete/:inv_id",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   utilities.handleErrors(invController.deleteView)
 );
 
-// Process the delete inventory request
+// Supprimer un véhicule
 router.post(
   "/delete",
-  utilities.checkAccountType,
+  requireEmployeeOrAdmin,
   utilities.handleErrors(invController.deleteItem)
 );
 
