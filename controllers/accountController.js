@@ -16,7 +16,7 @@ async function buildAccountManagement(req, res) {
       errors: null,
     });
   } catch (err) {
-    console.error("❌ Error building account management:", err);
+    console.error("❌ Error building account management:", err.message);
     res.status(500).send("Server Error");
   }
 }
@@ -54,14 +54,19 @@ async function buildAccountUpdate(req, res) {
     const nav = await utilities.getNav();
     const account = await accountModel.getAccountById(account_id);
 
+    if (!account) {
+      req.flash("notice", "❌ Account not found.");
+      return res.redirect("/account/");
+    }
+
     res.render("./account/update", {
       title: "Edit Account",
       nav,
       errors: null,
-      ...account, // Spread object: account_firstname, account_lastname, etc.
+      ...account, // account_firstname, account_lastname, etc.
     });
   } catch (err) {
-    console.error("❌ Error loading update view:", err);
+    console.error("❌ Error loading update view:", err.message);
     res.status(500).send("Server Error");
   }
 }
@@ -74,6 +79,13 @@ async function registerAccount(req, res) {
   const { account_firstname, account_lastname, account_email, account_password } = req.body;
 
   try {
+    // Vérifier si l'email existe déjà
+    const existing = await accountModel.checkExistingEmail(account_email);
+    if (existing > 0) {
+      req.flash("notice", "❌ Email already in use.");
+      return res.status(400).render("./account/register", { title: "Register", nav, errors: null });
+    }
+
     const hashedPassword = await bcrypt.hash(account_password, 10);
 
     const regResult = await accountModel.registerAccount(
@@ -84,14 +96,14 @@ async function registerAccount(req, res) {
     );
 
     if (regResult) {
-      req.flash("notice", `✅ Congratulations ${account_firstname}, registration successful! Please log in.`);
+      req.flash("notice", `✅ Registration successful. Welcome, ${account_firstname}! Please log in.`);
       return res.redirect("/account/login");
     } else {
-      req.flash("notice", "❌ Registration failed. Please try again.");
+      req.flash("notice", "❌ Registration failed. Try again.");
       return res.status(400).render("./account/register", { title: "Register", nav, errors: null });
     }
   } catch (err) {
-    console.error("❌ Error registering account:", err);
+    console.error("❌ Error registering account:", err.message);
     req.flash("notice", "Server error during registration.");
     res.status(500).render("./account/register", { title: "Register", nav, errors: null });
   }
@@ -118,27 +130,48 @@ async function accountLogin(req, res) {
       return res.status(400).render("./account/login", { title: "Login", nav, errors: null, account_email });
     }
 
-    // Remove password before creating token
+    // Supprimer le mot de passe avant de créer le token
     delete accountData.account_password;
 
-    // Create JWT token
-    const accessToken = jwt.sign(accountData, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
+    // Vérifier que la clé secrète JWT est définie
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined in .env");
+    }
 
-    // Set cookie (httpOnly = secure)
+    // Créer JWT token
+    const accessToken = jwt.sign(accountData, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY || "1h" });
+
+    // Définir le cookie sécurisé
     res.cookie("jwt", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // ⚠️ false en local
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 3600 * 1000, // 1h
+      maxAge: parseJwtExpiry(process.env.JWT_EXPIRY) || 3600 * 1000,
     });
 
     req.flash("notice", `👋 Welcome back, ${accountData.account_firstname}!`);
     return res.redirect("/account/");
-
   } catch (err) {
-    console.error("❌ Error logging in:", err);
+    console.error("❌ Error logging in:", err.message);
     req.flash("notice", "Server error during login.");
     res.status(500).render("./account/login", { title: "Login", nav, errors: null });
+  }
+}
+
+/* ****************************************
+ *  Helper pour convertir JWT_EXPIRY en ms
+ * *************************************** */
+function parseJwtExpiry(exp) {
+  if (!exp) return null;
+  const match = exp.match(/^(\d+)([smhd])$/);
+  if (!match) return null;
+  const value = parseInt(match[1], 10);
+  switch (match[2]) {
+    case "s": return value * 1000;
+    case "m": return value * 60 * 1000;
+    case "h": return value * 60 * 60 * 1000;
+    case "d": return value * 24 * 60 * 60 * 1000;
+    default: return null;
   }
 }
 
@@ -160,19 +193,18 @@ async function updateAccountInfo(req, res) {
     const accountData = updateResult.rows[0];
     delete accountData.account_password;
 
-    const accessToken = jwt.sign(accountData, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
+    const accessToken = jwt.sign(accountData, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY || "1h" });
     res.cookie("jwt", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 3600 * 1000,
+      maxAge: parseJwtExpiry(process.env.JWT_EXPIRY) || 3600 * 1000,
     });
 
     req.flash("notice", "✅ Account updated successfully.");
     return res.redirect("/account/");
-
   } catch (err) {
-    console.error("❌ Error updating account:", err);
+    console.error("❌ Error updating account:", err.message);
     req.flash("notice", "Server error during update.");
     res.status(500).render("./account/update", { title: "Edit Account", nav, errors: null });
   }
@@ -197,7 +229,7 @@ async function updatePassword(req, res) {
       res.status(400).render("./account/update", { title: "Edit Account", nav, errors: null });
     }
   } catch (err) {
-    console.error("❌ Error updating password:", err);
+    console.error("❌ Error updating password:", err.message);
     req.flash("notice", "Server error during password update.");
     res.status(500).render("./account/update", { title: "Edit Account", nav, errors: null });
   }
