@@ -1,43 +1,58 @@
-const accountValidate = require("../utilities/account-validation");
-
-// Needed Resources
+// ⚠️ Charger les modules nécessaires
 const express = require("express");
 const router = new express.Router();
+
 const utilities = require("../utilities/");
 const accountController = require("../controllers/accountController");
+const accountValidate = require("../utilities/account-validation");
 
-// Route sent to Account Management View
+// ------------------------------
+// Account Management View
+// ------------------------------
 router.get(
   "/",
   utilities.checkLogin,
   utilities.handleErrors(accountController.buildAccountManagement)
 );
 
-// Route sent when login link is clicked
-router.get("/login", utilities.handleErrors(accountController.buildLogin));
+// ------------------------------
+// Login View
+// ------------------------------
+router.get(
+  "/login",
+  utilities.handleErrors(accountController.buildLogin)
+);
 
-// Route sent when the "My Account" link is clicked
+// ------------------------------
+// Register View
+// ------------------------------
 router.get(
   "/register",
   utilities.handleErrors(accountController.buildRegister)
 );
 
-// Route sent to Account Update View
+// ------------------------------
+// Update Account View
+// ------------------------------
 router.get(
   "/update/:account_id",
   utilities.checkLogin,
   utilities.handleErrors(accountController.buildAccountUpdate)
 );
 
-// Route to post Edit Account Info
+// ------------------------------
+// Post Edit Account Info
+// ------------------------------
 router.post(
   "/update/info",
   accountValidate.updateInfoRules(),
   accountValidate.checkUpdateInfoData,
-  utilities.handleErrors(accountController.updateAccountInfo),
+  utilities.handleErrors(accountController.updateAccountInfo)
 );
 
-// Route to post Edit Password
+// ------------------------------
+// Post Edit Password
+// ------------------------------
 router.post(
   "/update/password",
   accountValidate.updatePwdRules(),
@@ -45,7 +60,9 @@ router.post(
   utilities.handleErrors(accountController.updatePassword)
 );
 
-// Route to post registration information to database
+// ------------------------------
+// Post Registration
+// ------------------------------
 router.post(
   "/register",
   accountValidate.registrationRules(),
@@ -53,12 +70,23 @@ router.post(
   utilities.handleErrors(accountController.registerAccount)
 );
 
-// Route to post login attempt
+// ------------------------------
+// Post Login
+// ------------------------------
 router.post(
   "/login",
   accountValidate.loginRules(),
   accountValidate.checkLogData,
   utilities.handleErrors(accountController.accountLogin)
+);
+
+// ------------------------------
+// Logout
+// ------------------------------
+router.get(
+  "/logout",
+  utilities.checkLogin,
+  utilities.handleErrors(accountController.logout)
 );
 
 module.exports = router;
