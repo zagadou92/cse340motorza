@@ -26,10 +26,13 @@ router.get(
 // ------------------------------
 // Register View
 // ------------------------------
-router.get(
+router.post(
   "/register",
-  utilities.handleErrors(accountController.buildRegister)
+  accountValidate.registrationRules(),
+  accountValidate.checkRegData,
+  utilities.handleErrors(accountController.registerAccount)
 );
+
 
 // ------------------------------
 // Update Account View
