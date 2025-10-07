@@ -1,4 +1,6 @@
-// ⚠️ Charger les variables d'environnement tout en haut
+// =====================================================
+// ⚙️ Configuration
+// =====================================================
 require("dotenv").config();
 
 const bcrypt = require("bcryptjs");
@@ -6,9 +8,20 @@ const jwt = require("jsonwebtoken");
 const utilities = require("../utilities/");
 const accountModel = require("../models/account-model");
 
-/* =====================================================
- *  BUILD ACCOUNT MANAGEMENT VIEW
- * ===================================================== */
+// =====================================================
+// 🧩 Helper – sécurise les flash messages
+// =====================================================
+function getMessages(req) {
+  try {
+    return req.flash ? req.flash() : {};
+  } catch {
+    return {};
+  }
+}
+
+// =====================================================
+// 📂 BUILD ACCOUNT MANAGEMENT VIEW
+// =====================================================
 async function buildAccountManagement(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -16,7 +29,7 @@ async function buildAccountManagement(req, res, next) {
       title: "Account Management",
       nav,
       errors: [],
-      messages: req.flash ? req.flash() : {},
+      messages: getMessages(req),
     });
   } catch (err) {
     console.error("❌ Error building account management:", err);
@@ -24,9 +37,9 @@ async function buildAccountManagement(req, res, next) {
   }
 }
 
-/* =====================================================
- *  BUILD LOGIN VIEW
- * ===================================================== */
+// =====================================================
+// 📂 BUILD LOGIN VIEW
+// =====================================================
 async function buildLogin(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -34,7 +47,7 @@ async function buildLogin(req, res, next) {
       title: "Login",
       nav,
       errors: [],
-      messages: req.flash ? req.flash() : {},
+      messages: getMessages(req),
       login_email: "",
     });
   } catch (err) {
@@ -43,9 +56,9 @@ async function buildLogin(req, res, next) {
   }
 }
 
-/* =====================================================
- *  BUILD REGISTER VIEW
- * ===================================================== */
+// =====================================================
+// 📂 BUILD REGISTER VIEW
+// =====================================================
 async function buildRegister(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -53,7 +66,7 @@ async function buildRegister(req, res, next) {
       title: "Register",
       nav,
       errors: [],
-      messages: req.flash ? req.flash() : {},
+      messages: getMessages(req),
     });
   } catch (err) {
     console.error("❌ Error building register view:", err);
@@ -61,12 +74,12 @@ async function buildRegister(req, res, next) {
   }
 }
 
-/* =====================================================
- *  BUILD ACCOUNT UPDATE VIEW
- * ===================================================== */
+// =====================================================
+// 📂 BUILD ACCOUNT UPDATE VIEW
+// =====================================================
 async function buildAccountUpdate(req, res, next) {
   try {
-    const account_id = parseInt(req.params.account_id, 10);
+    const account_id = Number(req.params.account_id);
     const nav = await utilities.getNav();
     const account = await accountModel.getAccountById(account_id);
 
@@ -79,7 +92,7 @@ async function buildAccountUpdate(req, res, next) {
       title: "Edit Account",
       nav,
       errors: [],
-      messages: req.flash ? req.flash() : {},
+      messages: getMessages(req),
       account_firstname: account.account_firstname,
       account_lastname: account.account_lastname,
       account_email: account.account_email,
@@ -91,9 +104,9 @@ async function buildAccountUpdate(req, res, next) {
   }
 }
 
-/* =====================================================
- *  PROCESS REGISTRATION
- * ===================================================== */
+// =====================================================
+// 🧾 REGISTER ACCOUNT
+// =====================================================
 async function registerAccount(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -105,8 +118,15 @@ async function registerAccount(req, res, next) {
         title: "Register",
         nav,
         errors: [],
-        messages: req.flash(),
+        messages: getMessages(req),
       });
+    }
+
+    // Vérifier si l’email existe déjà
+    const existingAccount = await accountModel.getAccountByEmail(account_email);
+    if (existingAccount) {
+      req.flash("notice", "⚠️ Cet email est déjà utilisé. Essayez de vous connecter.");
+      return res.redirect("/account/login");
     }
 
     const hashedPassword = await bcrypt.hash(account_password, 10);
@@ -120,15 +140,15 @@ async function registerAccount(req, res, next) {
     if (regResult) {
       req.flash("success", `✅ ${account_firstname}, inscription réussie ! Connectez-vous.`);
       return res.redirect("/account/login");
-    } else {
-      req.flash("notice", "❌ Échec de l'inscription.");
-      return res.status(400).render("./account/register", {
-        title: "Register",
-        nav,
-        errors: [],
-        messages: req.flash(),
-      });
     }
+
+    req.flash("error", "❌ Une erreur est survenue lors de l'inscription.");
+    return res.status(400).render("./account/register", {
+      title: "Register",
+      nav,
+      errors: [],
+      messages: getMessages(req),
+    });
   } catch (err) {
     console.error("❌ Error registering account:", err);
     req.flash("error", "❌ Erreur serveur lors de l'inscription.");
@@ -136,9 +156,9 @@ async function registerAccount(req, res, next) {
   }
 }
 
-/* =====================================================
- *  PROCESS LOGIN
- * ===================================================== */
+// =====================================================
+// 🔐 ACCOUNT LOGIN
+// =====================================================
 async function accountLogin(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -150,7 +170,7 @@ async function accountLogin(req, res, next) {
         title: "Login",
         nav,
         errors: [],
-        messages: req.flash(),
+        messages: getMessages(req),
         login_email: account_email || "",
       });
     }
@@ -162,7 +182,7 @@ async function accountLogin(req, res, next) {
         title: "Login",
         nav,
         errors: [],
-        messages: req.flash(),
+        messages: getMessages(req),
         login_email: account_email,
       });
     }
@@ -174,14 +194,12 @@ async function accountLogin(req, res, next) {
         title: "Login",
         nav,
         errors: [],
-        messages: req.flash(),
+        messages: getMessages(req),
         login_email: account_email,
       });
     }
 
     delete accountData.account_password;
-
-    if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET non défini dans .env ⚠️");
 
     const token = jwt.sign(accountData, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRY || "1h",
@@ -203,9 +221,9 @@ async function accountLogin(req, res, next) {
   }
 }
 
-/* =====================================================
- *  UPDATE ACCOUNT INFO
- * ===================================================== */
+// =====================================================
+// ✏️ UPDATE ACCOUNT INFO
+// =====================================================
 async function updateAccountInfo(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -224,7 +242,7 @@ async function updateAccountInfo(req, res, next) {
         title: "Edit Account",
         nav,
         errors: [],
-        messages: req.flash(),
+        messages: getMessages(req),
       });
     }
 
@@ -251,9 +269,9 @@ async function updateAccountInfo(req, res, next) {
   }
 }
 
-/* =====================================================
- *  UPDATE PASSWORD
- * ===================================================== */
+// =====================================================
+// 🔑 UPDATE PASSWORD
+// =====================================================
 async function updatePassword(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -268,7 +286,7 @@ async function updatePassword(req, res, next) {
         title: "Edit Account",
         nav,
         errors: [],
-        messages: req.flash(),
+        messages: getMessages(req),
       });
     }
 
@@ -281,18 +299,18 @@ async function updatePassword(req, res, next) {
   }
 }
 
-/* =====================================================
- *  LOGOUT
- * ===================================================== */
+// =====================================================
+// 🚪 LOGOUT
+// =====================================================
 function logout(req, res) {
   res.clearCookie("jwt");
   req.flash("success", "👋 Vous avez été déconnecté.");
   res.redirect("/");
 }
 
-/* =====================================================
- *  EXPORTS
- * ===================================================== */
+// =====================================================
+// EXPORTS
+// =====================================================
 module.exports = {
   buildAccountManagement,
   buildLogin,
