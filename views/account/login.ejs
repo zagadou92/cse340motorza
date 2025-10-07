@@ -10,16 +10,18 @@
   <main class="login-page">
     <h1><%= title || "Login to Your Account" %></h1>
 
-    <!-- ✅ Zone de messages flash -->
-    <% if (messages && messages.length > 0) { %>
+    <!-- ✅ Messages flash -->
+    <% if (messages && Object.keys(messages).length > 0) { %>
       <div class="flash-messages">
-        <% messages.forEach(msg => { %>
-          <p class="flash <%= msg.type || 'info' %>"><%= msg.text %></p>
+        <% Object.keys(messages).forEach(type => { %>
+          <% messages[type].forEach(msg => { %>
+            <p class="flash <%= type %>"><%= msg %></p>
+          <% }) %>
         <% }) %>
       </div>
     <% } %>
 
-    <!-- ✅ Zone d’erreurs -->
+    <!-- ✅ Erreurs de validation -->
     <% if (errors && errors.length > 0) { %>
       <ul class="error-list">
         <% errors.forEach(error => { %>
@@ -38,7 +40,7 @@
             name="account_email"
             required
             placeholder="Enter your email address"
-            value="<%= login_email || '' %>"
+            value="<%= typeof login_email !== 'undefined' ? login_email : '' %>"
           />
         </div>
 
