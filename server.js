@@ -10,6 +10,7 @@ const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const flash = require("connect-flash");
 const pgSession = require("connect-pg-simple")(session);
+const path = require("path");
 
 const pool = require("./database/");
 const utilities = require("./utilities");
@@ -36,7 +37,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Session middleware
+// ✅ Session middleware — doit être avant flash() et les routes
 app.use(
   session({
     store: new pgSession({
@@ -44,46 +45,48 @@ app.use(
       createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET || "defaultSecret",
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     name: "sessionId",
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60, // 1h
+    },
   })
 );
 
-// JWT check
+// ✅ Flash messages — DOIT être juste après la session
+app.use(flash());
+
+// ✅ Middleware pour rendre les messages flash disponibles dans toutes les vues
+app.use((req, res, next) => {
+  res.locals.messages = req.flash();
+  next();
+});
+
+// ✅ Middleware pour vérifier le JWT avant les routes
 app.use(utilities.checkJWTToken);
 
-// Expose cookies to views
+// ✅ Expose cookies aux vues (utile pour ton utilitaire)
 app.use((req, res, next) => {
   res.locals.cookies = req.cookies;
   next();
 });
 
-// Flash messages
-app.use(flash());
-app.use((req, res, next) => {
-  res.locals.messages = require("express-messages")(req, res);
-  next();
-});
+// ✅ Fichiers statiques (CSS, JS, images)
+app.use(express.static(path.join(__dirname, "public")));
 
 /* ******************************************
  * Routes
  ******************************************/
 app.use(staticRoutes);
-
-// Home page
 app.get("/", utilities.handleErrors(baseController.buildHome));
-
-// Inventory routes
 app.use("/inv", inventoryRoute);
-
-// Account routes
 app.use("/account", accountRoute);
-
-// Users routes
 app.use("/users", usersRoute);
 
-// Logout route
+// ✅ Logout route
 app.post("/logout", utilities.handleErrors(accountController.logout));
 
 /* ******************************************
@@ -97,7 +100,7 @@ app.use((req, res, next) => {
  * Global Error Handler
  ******************************************/
 app.use(async (err, req, res, next) => {
-  let nav = await utilities.getNav();
+  const nav = await utilities.getNav();
   console.error(`Error at "${req.originalUrl}": ${err.message}`);
 
   const message =
@@ -117,8 +120,10 @@ app.use(async (err, req, res, next) => {
  ******************************************/
 const PORT = process.env.PORT || 5500;
 const isDev = process.env.NODE_ENV === "development";
-const HOST = isDev ? "localhost" : "0.0.0.0"; // 🔹 localhost en dev, 0.0.0.0 en prod
+const HOST = isDev ? "localhost" : "0.0.0.0";
 
 app.listen(PORT, HOST, () => {
-  console.log(`✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV})`);
+  console.log(
+    `✅ App listening on http://${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV})`
+  );
 });
