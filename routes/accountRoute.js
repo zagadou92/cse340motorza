@@ -1,13 +1,13 @@
 // ⚠️ Charger les modules nécessaires
 const express = require("express");
-const router = new express.Router();
+const router = express.Router();
 
 const utilities = require("../utilities/");
 const accountController = require("../controllers/accountController");
 const accountValidate = require("../utilities/account-validation");
 
 // ------------------------------
-// Account Management View
+// Account Management View (GET /account/)
 // ------------------------------
 router.get(
   "/",
@@ -16,7 +16,7 @@ router.get(
 );
 
 // ------------------------------
-// Login View
+// Login View (GET /account/login)
 // ------------------------------
 router.get(
   "/login",
@@ -24,7 +24,15 @@ router.get(
 );
 
 // ------------------------------
-// Register View
+// Registration View (GET /account/register)
+// ------------------------------
+router.get(
+  "/register",
+  utilities.handleErrors(accountController.buildRegister)
+);
+
+// ------------------------------
+// Process Registration (POST /account/register)
 // ------------------------------
 router.post(
   "/register",
@@ -33,9 +41,8 @@ router.post(
   utilities.handleErrors(accountController.registerAccount)
 );
 
-
 // ------------------------------
-// Update Account View
+// Update Account View (GET /account/update/:account_id)
 // ------------------------------
 router.get(
   "/update/:account_id",
@@ -44,7 +51,7 @@ router.get(
 );
 
 // ------------------------------
-// Post Edit Account Info
+// Post Edit Account Info (POST /account/update/info)
 // ------------------------------
 router.post(
   "/update/info",
@@ -54,7 +61,7 @@ router.post(
 );
 
 // ------------------------------
-// Post Edit Password
+// Post Edit Password (POST /account/update/password)
 // ------------------------------
 router.post(
   "/update/password",
@@ -64,17 +71,7 @@ router.post(
 );
 
 // ------------------------------
-// Post Registration
-// ------------------------------
-router.post(
-  "/register",
-  accountValidate.registrationRules(),
-  accountValidate.checkRegData,
-  utilities.handleErrors(accountController.registerAccount)
-);
-
-// ------------------------------
-// Post Login
+// Process Login (POST /account/login)
 // ------------------------------
 router.post(
   "/login",
@@ -84,7 +81,7 @@ router.post(
 );
 
 // ------------------------------
-// Logout
+// Logout (GET /account/logout)
 // ------------------------------
 router.get(
   "/logout",
