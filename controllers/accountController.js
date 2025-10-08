@@ -13,14 +13,39 @@ const accountModel = require("../models/account-model");
 // =====================================================
 function getMessages(req) {
   try {
-    return req.flash ? req.flash() : {};
+    const msgs = req.flash ? req.flash() : {};
+    return {
+      success: msgs.success || [],
+      error: msgs.error || [],
+      notice: msgs.notice || [],
+    };
   } catch {
-    return {};
+    return { success: [], error: [], notice: [] };
   }
 }
 
 // =====================================================
-// 📂 BUILD ACCOUNT MANAGEMENT VIEW
+// 🔐 Hash password helper
+// =====================================================
+async function hashPassword(password) {
+  if (!password || password.length < 12) {
+    throw new Error("Password must be at least 12 characters");
+  }
+  return await bcrypt.hash(password, 10);
+}
+
+// =====================================================
+// 🔑 JWT helper
+// =====================================================
+function signToken(accountData) {
+  const token = jwt.sign(accountData, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRY || "1h",
+  });
+  return token;
+}
+
+// =====================================================
+// 📂 BUILD VIEWS
 // =====================================================
 async function buildAccountManagement(req, res, next) {
   try {
@@ -37,9 +62,6 @@ async function buildAccountManagement(req, res, next) {
   }
 }
 
-// =====================================================
-// 📂 BUILD LOGIN VIEW
-// =====================================================
 async function buildLogin(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -56,9 +78,6 @@ async function buildLogin(req, res, next) {
   }
 }
 
-// =====================================================
-// 📂 BUILD REGISTER VIEW
-// =====================================================
 async function buildRegister(req, res, next) {
   try {
     const nav = await utilities.getNav();
@@ -75,36 +94,6 @@ async function buildRegister(req, res, next) {
 }
 
 // =====================================================
-// 📂 BUILD ACCOUNT UPDATE VIEW
-// =====================================================
-async function buildAccountUpdate(req, res, next) {
-  try {
-    const account_id = Number(req.params.account_id);
-    const nav = await utilities.getNav();
-    const account = await accountModel.getAccountById(account_id);
-
-    if (!account) {
-      req.flash("notice", "❌ Compte introuvable.");
-      return res.redirect("/account/");
-    }
-
-    res.render("./account/update", {
-      title: "Edit Account",
-      nav,
-      errors: [],
-      messages: getMessages(req),
-      account_firstname: account.account_firstname,
-      account_lastname: account.account_lastname,
-      account_email: account.account_email,
-      account_id: account.account_id,
-    });
-  } catch (err) {
-    console.error("❌ Error loading update view:", err);
-    next(err);
-  }
-}
-
-// =====================================================
 // 🧾 REGISTER ACCOUNT
 // =====================================================
 async function registerAccount(req, res, next) {
@@ -114,28 +103,17 @@ async function registerAccount(req, res, next) {
 
     if (!account_firstname || !account_lastname || !account_email || !account_password) {
       req.flash("notice", "❌ Tous les champs sont requis.");
-      return res.status(400).render("./account/register", {
-        title: "Register",
-        nav,
-        errors: [],
-        messages: getMessages(req),
-      });
+      return res.status(400).render("./account/register", { title: "Register", nav, errors: [], messages: getMessages(req) });
     }
 
-    // Vérifier si l’email existe déjà
     const existingAccount = await accountModel.getAccountByEmail(account_email);
     if (existingAccount) {
       req.flash("notice", "⚠️ Cet email est déjà utilisé. Essayez de vous connecter.");
       return res.redirect("/account/login");
     }
 
-    const hashedPassword = await bcrypt.hash(account_password, 10);
-    const regResult = await accountModel.registerAccount(
-      account_firstname,
-      account_lastname,
-      account_email,
-      hashedPassword
-    );
+    const hashedPassword = await hashPassword(account_password);
+    const regResult = await accountModel.registerAccount(account_firstname, account_lastname, account_email, hashedPassword);
 
     if (regResult) {
       req.flash("success", `✅ ${account_firstname}, inscription réussie ! Connectez-vous.`);
@@ -143,12 +121,8 @@ async function registerAccount(req, res, next) {
     }
 
     req.flash("error", "❌ Une erreur est survenue lors de l'inscription.");
-    return res.status(400).render("./account/register", {
-      title: "Register",
-      nav,
-      errors: [],
-      messages: getMessages(req),
-    });
+    return res.status(400).render("./account/register", { title: "Register", nav, errors: [], messages: getMessages(req) });
+
   } catch (err) {
     console.error("❌ Error registering account:", err);
     req.flash("error", "❌ Erreur serveur lors de l'inscription.");
@@ -166,135 +140,32 @@ async function accountLogin(req, res, next) {
 
     if (!account_email || !account_password) {
       req.flash("notice", "❌ Email et mot de passe requis.");
-      return res.status(400).render("./account/login", {
-        title: "Login",
-        nav,
-        errors: [],
-        messages: getMessages(req),
-        login_email: account_email || "",
-      });
+      return res.status(400).render("./account/login", { title: "Login", nav, errors: [], messages: getMessages(req), login_email: account_email || "" });
     }
 
     const accountData = await accountModel.getAccountByEmail(account_email);
     if (!accountData) {
       req.flash("notice", "❌ Identifiants incorrects.");
-      return res.status(400).render("./account/login", {
-        title: "Login",
-        nav,
-        errors: [],
-        messages: getMessages(req),
-        login_email: account_email,
-      });
+      return res.status(400).render("./account/login", { title: "Login", nav, errors: [], messages: getMessages(req), login_email: account_email });
     }
 
     const validPassword = await bcrypt.compare(account_password, accountData.account_password);
     if (!validPassword) {
       req.flash("notice", "❌ Mot de passe incorrect.");
-      return res.status(400).render("./account/login", {
-        title: "Login",
-        nav,
-        errors: [],
-        messages: getMessages(req),
-        login_email: account_email,
-      });
+      return res.status(400).render("./account/login", { title: "Login", nav, errors: [], messages: getMessages(req), login_email: account_email });
     }
 
     delete accountData.account_password;
+    const token = signToken(accountData);
 
-    const token = jwt.sign(accountData, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRY || "1h",
-    });
-
-    res.cookie("jwt", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 3600 * 1000,
-    });
+    res.cookie("jwt", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", maxAge: 1000 * 60 * 60 * 24 }); // 24h
 
     req.flash("success", `👋 Bienvenue ${accountData.account_firstname} !`);
     return res.redirect("/account/");
+
   } catch (err) {
     console.error("❌ Error during login:", err);
     req.flash("error", "❌ Erreur serveur lors de la connexion.");
-    next(err);
-  }
-}
-
-// =====================================================
-// ✏️ UPDATE ACCOUNT INFO
-// =====================================================
-async function updateAccountInfo(req, res, next) {
-  try {
-    const nav = await utilities.getNav();
-    const { account_id, account_firstname, account_lastname, account_email } = req.body;
-
-    const updateResult = await accountModel.updateAccountInfo(
-      account_id,
-      account_firstname,
-      account_lastname,
-      account_email
-    );
-
-    if (!updateResult) {
-      req.flash("notice", "❌ Échec de la mise à jour.");
-      return res.status(400).render("./account/update", {
-        title: "Edit Account",
-        nav,
-        errors: [],
-        messages: getMessages(req),
-      });
-    }
-
-    const accountData = updateResult.rows[0];
-    delete accountData.account_password;
-
-    const token = jwt.sign(accountData, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRY || "1h",
-    });
-
-    res.cookie("jwt", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 3600 * 1000,
-    });
-
-    req.flash("success", "✅ Compte mis à jour avec succès !");
-    return res.redirect("/account/");
-  } catch (err) {
-    console.error("❌ Error updating account:", err);
-    req.flash("error", "❌ Erreur serveur lors de la mise à jour.");
-    next(err);
-  }
-}
-
-// =====================================================
-// 🔑 UPDATE PASSWORD
-// =====================================================
-async function updatePassword(req, res, next) {
-  try {
-    const nav = await utilities.getNav();
-    const { account_id, account_password } = req.body;
-
-    const hashedPassword = await bcrypt.hash(account_password, 10);
-    const updatePwdResult = await accountModel.updatePassword(account_id, hashedPassword);
-
-    if (!updatePwdResult) {
-      req.flash("notice", "❌ Échec de la mise à jour du mot de passe.");
-      return res.status(400).render("./account/update", {
-        title: "Edit Account",
-        nav,
-        errors: [],
-        messages: getMessages(req),
-      });
-    }
-
-    req.flash("success", "🔑 Mot de passe mis à jour avec succès !");
-    return res.redirect("/account/");
-  } catch (err) {
-    console.error("❌ Error updating password:", err);
-    req.flash("error", "❌ Erreur serveur lors de la mise à jour du mot de passe.");
     next(err);
   }
 }
@@ -308,17 +179,11 @@ function logout(req, res) {
   res.redirect("/");
 }
 
-// =====================================================
-// EXPORTS
-// =====================================================
 module.exports = {
   buildAccountManagement,
   buildLogin,
   buildRegister,
-  buildAccountUpdate,
   registerAccount,
   accountLogin,
-  updateAccountInfo,
-  updatePassword,
   logout,
 };
