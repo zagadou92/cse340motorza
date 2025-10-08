@@ -70,18 +70,18 @@ app.use(flash());
  * Global Middleware - Accessible in all views
  *******************************************/
 app.use((req, res, next) => {
-  // Fonction messages() disponible dans EJS
-  res.locals.messages = () => req.flash();
+  // On regroupe les flash dans un seul objet "messages"
+  res.locals.messages = {
+    success: req.flash("success"),
+    error: req.flash("error"),
+    notice: req.flash("notice"),
+  };
 
-  // Messages séparés si tu veux aussi success / error directement
-  res.locals.success_msg = req.flash("success");
-  res.locals.error_msg = req.flash("error");
   res.locals.errors = req.flash("errors");
-
-  // Données utilisateur (si connecté)
   res.locals.accountData = res.locals.accountData || null;
   next();
 });
+
 
 /*******************************************
  * JWT Verification Middleware
