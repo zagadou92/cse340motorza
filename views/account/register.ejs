@@ -1,19 +1,26 @@
 <% if (title) { %>
-<h1><%= title %></h1>
-<% } else { res.redirect('/') } %> 
-<%- messages() %>
-<br >
-<% if (errors) { %>
-<ul class="notice">
-  <% errors.array().forEach(error => { %>
-  <li><%= error.msg %></li>
-  <% }) %>
-</ul>
-<br >
+  <h1><%= title %></h1>
 <% } %>
+
+<% if (typeof messages === 'function') { %>
+  <%- messages() %>
+<% } %>
+
+<br>
+
+<% if (errors && errors.array) { %>
+  <ul class="notice">
+    <% errors.array().forEach(error => { %>
+      <li><%= error.msg %></li>
+    <% }) %>
+  </ul>
+  <br>
+<% } %>
+
 <div class="form-container">
   <p class="form-advice">📝 All fields are required ✍️</p>
   <form id="registerForm" action="/account/register" method="post">
+    
     <div class="form-group">
       <label for="firstName">First Name:</label>
       <input
@@ -22,9 +29,10 @@
         name="account_firstname"
         placeholder="Enter a valid first name"
         required
-        value="<%= locals.account_firstname %>"
+        value="<%= locals?.account_firstname || '' %>"
       >
     </div>
+
     <div class="form-group">
       <label for="lastName">Last Name:</label>
       <input
@@ -33,9 +41,10 @@
         name="account_lastname"
         placeholder="Enter a valid last name"
         required
-        value="<%= locals.account_lastname %>"
+        value="<%= locals?.account_lastname || '' %>"
       >
     </div>
+
     <div class="form-group">
       <label for="email">Email Address:</label>
       <input
@@ -44,9 +53,10 @@
         name="account_email"
         placeholder="Enter a valid email address"
         required
-        value="<%= locals.account_email %>"
+        value="<%= locals?.account_email || '' %>"
       >
     </div>
+
     <div class="form-group">
       <label for="password">Password:</label>
       <input
@@ -58,15 +68,16 @@
         pattern="^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{12,}$"
       >
     </div>
+
     <div class="form-advice">
-      <span
-        >Passwords must be at least 12 characters and contain at least 1 number,
-        1 capital letter and 1 special character</span
-      >
+      <span>
+        Passwords must be at least 12 characters and contain at least 1 number,
+        1 capital letter, and 1 special character
+      </span>
     </div>
-    <button id="pwd-visibility" type="button">
-      Toggle Password Visibility
-    </button>
+
+    <button id="pwd-visibility" type="button">Toggle Password Visibility</button>
     <button type="submit" class="btn-account">Register</button>
+
   </form>
 </div>
