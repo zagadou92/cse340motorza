@@ -11,7 +11,7 @@ const pool = isDev
       password: String(process.env.DB_PASSWORD || ""),
       host: process.env.DB_HOST || "localhost",
       port: parseInt(process.env.DB_PORT, 10) || 5432,
-      database: process.env.DB_NAME || "cse340_assignment2",
+      database: process.env.DB_NAME || "assignment2_j7kn",
       ssl: false, // 🔹 désactivé en dev
     })
   : new Pool({
