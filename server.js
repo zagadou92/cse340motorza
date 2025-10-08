@@ -70,12 +70,15 @@ app.use(flash());
  * Global Middleware - Accessible in all views
  *******************************************/
 app.use((req, res, next) => {
-  // Simplifie la syntaxe dans EJS : <%= success_msg %>
+  // Fonction messages() disponible dans EJS
+  res.locals.messages = () => req.flash();
+
+  // Messages séparés si tu veux aussi success / error directement
   res.locals.success_msg = req.flash("success");
   res.locals.error_msg = req.flash("error");
   res.locals.errors = req.flash("errors");
 
-  // Pour afficher les données utilisateur (si connecté)
+  // Données utilisateur (si connecté)
   res.locals.accountData = res.locals.accountData || null;
   next();
 });
@@ -128,6 +131,7 @@ app.use(async (err, req, res, next) => {
     title: err.status || "Server Error",
     message,
     nav,
+    messages: () => req.flash(), // ✅ messages() accessible même en erreur
   });
 });
 
